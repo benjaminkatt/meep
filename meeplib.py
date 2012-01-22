@@ -34,6 +34,8 @@ __all__ = ['Message', 'get_all_messages', 'get_message', 'delete_message',
 # a dictionary, storing all messages by a (unique, int) ID -> Message object.
 _messages = {}
 
+_root_messages= {}
+
 def _get_next_message_id():
     if _messages:
         return max(_messages.keys()) + 1
@@ -54,8 +56,9 @@ def _reset():
     """
     Clean out all persistent data structures, for testing purposes.
     """
-    global _messages, _users, _user_ids
+    global _messages, _users, _user_ids, _root_messages
     _messages = {}
+    _root_messages = {}
     _users = {}
     _user_ids = {}
 
@@ -68,29 +71,53 @@ class Message(object):
     'author' must be an object of type 'User'.
     
     """
-    def __init__(self, title, post, author):
+    def __init__(self, title, post, author, parentPostID):
         self.title = title
         self.post = post
-
         assert isinstance(author, User)
         self.author = author
-
-        self._save_message()
+        self.parentPostID = parentPostID
+        self.children = {}
+        if parentPostID == -1:
+            self._save_message()
+            _root_messages[self.id] = self
+        else:
+            self.id = _get_next_message_id()
+            _messages.get(parentPostID).children[self.id] = self
+            _messages[self.id] = self
 
     def _save_message(self):
         self.id = _get_next_message_id()
         
         # register this new message with the messages list:
         _messages[self.id] = self
+        
+    def __del__(self):
+        for c in children:
+            del _messages[c.id]
+            
+        del _messages[msg.id]
+        
 
-def get_all_messages(sort_by='id'):
-    return _messages.values()
+def build_tree(children):
+    tree = []
+    for c in children:
+        tree.append(c)
+        tree += build_tree(c.children.values())
+ 
+    return tree
 
+def get_all_messages():
+    return build_tree(_root_messages.values())
+    
 def get_message(id):
     return _messages.get(id)            # return None if no such message
 
 def delete_message(msg):
-    del _messages[msg.id]
+    if msg.parentPostID == -1:
+        del _root_messages[msg.id]
+    else:
+        del _messages[msg.parentPostID].children[msg.id]
 
 ###
 

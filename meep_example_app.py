@@ -7,7 +7,7 @@ def initialize():
     u = meeplib.User('test', 'foo')
 
     # create a single message
-    meeplib.Message('my title', 'This is my message!', u)
+    meeplib.Message('my title', 'This is my message!', u, -1)
 
     # done.
 
@@ -56,18 +56,36 @@ class MeepExampleApp(object):
         messages = meeplib.get_all_messages()
 
         s = []
+        stack = []
         for m in messages:
-            s.append('id: %d<p>' % (m.id,))
+            while (len(stack) > 0) and (stack[-1] != m.parentPostID):
+                stack.pop()
+                
+            s.append('<div style=margin-left:' + str(len(stack) * 100) + 'px>id: %d<p>' % (m.id))
             s.append('title: %s<p>' % (m.title))
             s.append('message: %s<p>' % (m.post))
             s.append('author: %s<p>' % (m.author.username))
             s.append("""
-                <form action='remove' method='POST'>
-                <input type='hidden' name='messageID' value='""" + str(m.id) + """'>
-                <input type='submit' value='Delete this message' 
-                    onclick="return confirm('Are you sure you want to delete this message?')">
+                <script type='text/javascript'>var clearedResponseText = false;</script>
+                <form action='reply' method='POST'>
+                <input type='hidden' name='title' value='""" + str(m.title) + """' />
+                <input type='hidden' name='parentPostID' value='""" + str(m.id) + """' />
+                <input type='text' name='message' value='Enter a response here'
+                    onclick="if (!clearedResponseText) {
+                        value = ''; 
+                        clearedResponseText = true;
+                    }" />
+                <input type='submit' value='Submit response' />
                 </form>""")
+            s.append("""
+                <form action='remove' method='POST'>
+                <input type='hidden' name='messageID' value='""" + str(m.id) + """' />
+                <input type='submit' value='Delete this message' 
+                    onclick="return confirm('Are you sure you want to delete this message? Any responses will also be deleted.')" />
+                </form></div>""")
             s.append('<hr>')
+            if m.id != -1:
+                stack.append(m.id)
 
         s.append("<a href='../../'>index</a>")
             
@@ -83,6 +101,7 @@ class MeepExampleApp(object):
 
         return """
             <form action='add_action' method='POST'>
+            <input type='hidden' name='parentPostID' value='-1' />
             Title: <input type='text' name='title'><br>
             Message:<input type='text' name='message'><br>
             <input type='submit'>
@@ -99,7 +118,23 @@ class MeepExampleApp(object):
         headers.append(('Location', '/m/list'))
         start_response("302 Found", headers)
         return ["message removed"]
+    
+    def reply_message(self, environ, start_response):
+        print environ['wsgi.input']
+        form = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ)
+
+        title = form['title'].value
+        message = form['message'].value
+        parentPostID = int(form['parentPostID'].value)
+        username = 'test'
+        user = meeplib.get_user(username)
         
+        new_message = meeplib.Message(title, message, user, parentPostID)
+
+        headers = [('Content-type', 'text/html')]
+        headers.append(('Location', '/m/list'))
+        start_response("302 Found", headers)
+        return ["message added"]
 
     def add_message_action(self, environ, start_response):
         print environ['wsgi.input']
@@ -107,11 +142,11 @@ class MeepExampleApp(object):
 
         title = form['title'].value
         message = form['message'].value
-        
+        parentPostID = int(form['parentPostID'].value)
         username = 'test'
         user = meeplib.get_user(username)
         
-        new_message = meeplib.Message(title, message, user)
+        new_message = meeplib.Message(title, message, user, parentPostID)
 
         headers = [('Content-type', 'text/html')]
         headers.append(('Location', '/m/list'))
@@ -126,6 +161,7 @@ class MeepExampleApp(object):
                       '/m/list': self.list_messages,
                       '/m/add': self.add_message,
                       '/m/remove': self.remove_message,
+                      '/m/reply': self.reply_message,
                       '/m/add_action': self.add_message_action
                       }
 
