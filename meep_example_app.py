@@ -3,7 +3,7 @@ import traceback
 import cgi
 
 
-#Updated for HW2  12:17 Jan24
+#Updated for HW3 11:43 Jan26
 #username = 'test'
 def initialize():
     # create a default user
