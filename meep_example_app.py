@@ -237,8 +237,8 @@ class MeepExampleApp(object):
         title = form['title'].value
         message = form['message'].value
         parentPostID = int(form['parentPostID'].value)
-        username = 'test'
-        user = meeplib.get_user(username)
+        #username = 'test'
+        user = meeplib.get_user(meeplib.get_current_user())
         
 
         new_message = meeplib.Message(title, message, user, parentPostID)
@@ -255,8 +255,10 @@ class MeepExampleApp(object):
         title = form['title'].value
         message = form['message'].value
         parentPostID = int(form['parentPostID'].value)
-        username = 'test'
-        user = meeplib.get_user(username)
+        #username = 'test'
+        print "!!!!!!"
+        print meeplib.get_current_user()
+        user = meeplib.get_user(meeplib.get_current_user())
         
         new_message = meeplib.Message(title, message, user, parentPostID)
 
