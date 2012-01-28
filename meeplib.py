@@ -106,10 +106,10 @@ class Message(object):
         _messages[self.id] = self
         
     def __del__(self):
-        for c in children:
-            del _messages[c.id]
+        for c in self.children:
+            del _messages[int(c.id)]
             
-        del _messages[msg.id]
+        del _messages[int(self.id)]
         
 
 def build_tree(children):
@@ -130,6 +130,7 @@ def delete_message(msg):
 
     if msg.parentPostID == -1:
         del _root_messages[msg.id]
+        del _messages[msg.id]
     else:
         del _messages[msg.parentPostID].children[msg.id]
 
@@ -140,30 +141,29 @@ class User(object):
     def __init__(self, username, password):
         self.username = username
         self.password = password
-        print "user test 1"
+        
         self._save_user()
 
     def _save_user(self):
-        print "save user test2"
         self.id = _get_next_user_id()
-        print "save user test3"
+       
 
         # register new user ID with the users list:
         _user_ids[self.id] = self
         _users[self.username] = self
 
 def set_current_user(username):
-    print "----"
-    print username
+    #print "----"
+    #print username
     global _current_user
     _current_user = username
-    print _current_user
-    print "-----"
+    #print _current_user
+    #print "-----"
 
 def get_current_user():
-    print "xxxx"
-    print _current_user
-    print "xxxx"
+    #print "xxxx"
+    #print _current_user
+    #print "xxxx"
     return _current_user
 
 def get_user(username):
