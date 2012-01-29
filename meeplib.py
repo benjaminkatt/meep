@@ -24,7 +24,8 @@ Functions and classes:
 """
 
 __all__ = ['Message', 'get_all_messages', 'get_message', 'delete_message',
-           'User', 'get_user', 'get_all_users', 'delete_user']
+           'User', 'set_current_user', 'get_current_user', 'get_user',
+           'get_all_users', 'delete_user', 'is_user']
 
 ###
 # internal data structures & functions; please don't access these
@@ -34,7 +35,9 @@ __all__ = ['Message', 'get_all_messages', 'get_message', 'delete_message',
 # a dictionary, storing all messages by a (unique, int) ID -> Message object.
 _messages = {}
 
+
 _root_messages= {}
+
 
 def _get_next_message_id():
     if _messages:
@@ -47,20 +50,30 @@ _user_ids = {}
 # a dictionary, storing all users by username
 _users = {}
 
+#a string that holds the username of the current logged in user
+_current_user = ''
+
+
 def _get_next_user_id():
     if _users:
-        return max(_users.keys()) + 1
+        #print _users.keys()
+ 
+        return max(_user_ids.keys()) + 1
+        
     return 0
 
 def _reset():
     """
     Clean out all persistent data structures, for testing purposes.
     """
-    global _messages, _users, _user_ids, _root_messages
+
+    global _messages, _users, _user_ids, _root_messages, current_user
+
     _messages = {}
     _root_messages = {}
     _users = {}
     _user_ids = {}
+    _current_user = ''
 
 ###
 
@@ -93,10 +106,10 @@ class Message(object):
         _messages[self.id] = self
         
     def __del__(self):
-        for c in children:
-            del _messages[c.id]
+        for c in self.children:
+            del _messages[int(c.id)]
             
-        del _messages[msg.id]
+        del _messages[int(self.id)]
         
 
 def build_tree(children):
@@ -114,12 +127,12 @@ def get_message(id):
     return _messages[id]
 
 def delete_message(msg):
+    assert isinstance(msg, Message)
     if msg.parentPostID == -1:
         del _root_messages[msg.id]
+        del _messages[msg.id]
     else:
         del _messages[msg.parentPostID].children[msg.id]
-    assert isinstance(msg, Message)
-    del _messages[msg.id]
 
 ###
 
@@ -127,15 +140,30 @@ class User(object):
     def __init__(self, username, password):
         self.username = username
         self.password = password
-
+        
         self._save_user()
 
     def _save_user(self):
         self.id = _get_next_user_id()
+       
 
         # register new user ID with the users list:
         _user_ids[self.id] = self
         _users[self.username] = self
+
+def set_current_user(username):
+    #print "----"
+    #print username
+    global _current_user
+    _current_user = username
+    #print _current_user
+    #print "-----"
+
+def get_current_user():
+    #print "xxxx"
+    #print _current_user
+    #print "xxxx"
+    return _current_user
 
 def get_user(username):
     return _users.get(username)         # return None if no such user
@@ -146,3 +174,23 @@ def get_all_users():
 def delete_user(user):
     del _users[user.username]
     del _user_ids[user.id]
+
+def is_user(username, password):
+    try:
+        thisUser = get_user(username)
+        #print 'success1'
+    except NameError:
+        thisUser = None
+        #print 'fail1'
+
+    #print thisUser.password
+    #print password
+    if thisUser is not None:
+        if str(thisUser.password) == str(password):
+            #print "true"
+            return True
+        #print "false1"
+    else:
+        #print "false2"
+        return False
+    
