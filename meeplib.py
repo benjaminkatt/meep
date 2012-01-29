@@ -111,13 +111,15 @@ def get_all_messages():
     return build_tree(_root_messages.values())
     
 def get_message(id):
-    return _messages.get(id)            # return None if no such message
+    return _messages[id]
 
 def delete_message(msg):
     if msg.parentPostID == -1:
         del _root_messages[msg.id]
     else:
         del _messages[msg.parentPostID].children[msg.id]
+    assert isinstance(msg, Message)
+    del _messages[msg.id]
 
 ###
 
