@@ -1,3 +1,5 @@
+import pickle
+
 """
 meeplib - A simple message board back-end implementation.
 
@@ -35,15 +37,6 @@ __all__ = ['Message', 'get_all_messages', 'get_message', 'delete_message',
 # a dictionary, storing all messages by a (unique, int) ID -> Message object.
 _messages = {}
 
-
-_root_messages= {}
-
-
-def _get_next_message_id():
-    if _messages:
-        return max(_messages.keys()) + 1
-    return 0
-
 # a dictionary, storing all users by a (unique, int) ID -> User object.
 _user_ids = {}
 
@@ -53,6 +46,35 @@ _users = {}
 #a string that holds the username of the current logged in user
 _current_user = ''
 
+def _getFileName():
+    return 'meepBackup.txt'
+
+def _backup_meep():
+    meepBackup = open(_getFileName(), 'w')
+    pickle.dump(_users, meepBackup)
+    pickle.dump(_user_ids, meepBackup)
+    pickle.dump(_messages, meepBackup)
+    meepBackup.close()
+      
+def _load_backup():
+    global _messages, _users, _user_ids
+    meepBackup = open(_getFileName(), 'r')
+    _users = pickle.load(meepBackup)
+    _user_ids = pickle.load(meepBackup)
+    _messages = pickle.load(meepBackup)
+    meepBackup.close()
+
+def _get_root_messages():
+    rootMessages = []
+    for m in _messages.values():
+        if m.parentPostID == -1:
+            rootMessages.append(m)
+    return rootMessages
+
+def _get_next_message_id():
+    if _messages:
+        return max(_messages.keys()) + 1
+    return 0
 
 def _get_next_user_id():
     if _users:
@@ -67,10 +89,9 @@ def _reset():
     Clean out all persistent data structures, for testing purposes.
     """
 
-    global _messages, _users, _user_ids, _root_messages, current_user
+    global _messages, _users, _user_ids, current_user
 
     _messages = {}
-    _root_messages = {}
     _users = {}
     _user_ids = {}
     _current_user = ''
@@ -93,17 +114,18 @@ class Message(object):
         self.children = {}
         if parentPostID == -1:
             self._save_message()
-            _root_messages[self.id] = self
         else:
             self.id = _get_next_message_id()
             _messages.get(parentPostID).children[self.id] = self
-            _messages[self.id] = self
+            _messages[self.id] = self    
+        _backup_meep()
 
     def _save_message(self):
         self.id = _get_next_message_id()
         
         # register this new message with the messages list:
         _messages[self.id] = self
+        
         
     def __del__(self):
         for c in self.children:
@@ -121,7 +143,7 @@ def build_tree(children):
     return tree
 
 def get_all_messages():
-    return build_tree(_root_messages.values())
+    return build_tree(_get_root_messages())
     
 def get_message(id):
     return _messages[id]
@@ -129,40 +151,30 @@ def get_message(id):
 def delete_message(msg):
     assert isinstance(msg, Message)
     if msg.parentPostID == -1:
-        del _root_messages[msg.id]
         del _messages[msg.id]
     else:
         del _messages[msg.parentPostID].children[msg.id]
+    _backup_meep()
 
 ###
 
 class User(object):
     def __init__(self, username, password):
         self.username = username
-        self.password = password
-        
+        self.password = password    
         self._save_user()
 
     def _save_user(self):
         self.id = _get_next_user_id()
-       
-
-        # register new user ID with the users list:
         _user_ids[self.id] = self
         _users[self.username] = self
+        _backup_meep()
 
 def set_current_user(username):
-    #print "----"
-    #print username
     global _current_user
     _current_user = username
-    #print _current_user
-    #print "-----"
 
 def get_current_user():
-    #print "xxxx"
-    #print _current_user
-    #print "xxxx"
     return _current_user
 
 def get_user(username):
@@ -178,19 +190,11 @@ def delete_user(user):
 def is_user(username, password):
     try:
         thisUser = get_user(username)
-        #print 'success1'
     except NameError:
-        thisUser = None
-        #print 'fail1'
+        return False
 
-    #print thisUser.password
-    #print password
     if thisUser is not None:
-        if str(thisUser.password) == str(password):
-            #print "true"
-            return True
-        #print "false1"
+        return str(thisUser.password) == str(password)
     else:
-        #print "false2"
         return False
     

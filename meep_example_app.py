@@ -1,46 +1,33 @@
 import meeplib
 import traceback
 import cgi
+import pickle
 
 
 #Updated for HW3 11:43 Jan26
 #username = 'test'
 def initialize():
-    # create a default user
-    u = meeplib.User('test', 'foo')
-    a = meeplib.User('Anonymous', 'password')
-    x = meeplib.User('studentx', 'passwordx')
-    y = meeplib.User('studenty', 'passwordy')
-    z = meeplib.User('studentz', 'passwordz')
-    meeplib.set_current_user('Anonymous')
-    #e = meeplib.get_user('studenty')
-    #print e
-    
-    # create a single message
-    meeplib.Message('my title', 'This is my message!', u, -1)
-
-    #loggedIn = False
-    
-    # done
+    try:
+        meeplib._load_backup()
+    except IOError:
+        # create default users
+        u = meeplib.User('test', 'foo')
+        a = meeplib.User('Anonymous', 'password')
+        x = meeplib.User('studentx', 'passwordx')
+        y = meeplib.User('studenty', 'passwordy')
+        z = meeplib.User('studentz', 'passwordz')
+        meeplib.Message('my title', 'This is my message!', u, -1)
 
 class MeepExampleApp(object):
     """
     WSGI app object.
     """
-    #currentUser = 'test'
     def index(self, environ, start_response):
         start_response("200 OK", [('Content-type', 'text/html')])
-
-        #username = 'student'
-        #print username
-        #print loggedIn
-        #if (loggedIn == 0):
-         #   print "qwerty"
-        #if loggedIn:
-        #print get_user(username)
-        username = 'test'
-        #return ["""you are logged in as user: %s<p><a href='/m/add'>Add a message</a><p><a href='/login'>Log in</a><p><a href='/logout'>Log out</a><p><a href='/m/list'>Show messages</a>""" % meeplib.get_current_user()]
-        return ["""you are logged in as user: %s<p><a href='/m/add'>Add a message</a><p><a href='/create_user'>Create a New User</a><p><a href='/login'>Log in</a><p><a href='/logout'>Log out</a><p><a href='/m/list'>Show messages</a>""" % meeplib.get_current_user()]
+        if meeplib.get_current_user() == '':
+			return ["""Please login to create and delete messages<p><a href='/login'>Log in</a><p><a href='/create_user'>Create a New User</a><p><a href='/m/list'>Show messages</a>"""]
+        else:
+			return ["""you are logged in as user: %s<p><a href='/m/add'>Add a message</a><p><a href='/create_user'>Create a New User</a><p><a href='/logout'>Log out</a><p><a href='/m/list'>Show messages</a>""" % meeplib.get_current_user()]
         
     def login(self, environ, start_response):
         print "login test 1"
@@ -48,13 +35,15 @@ class MeepExampleApp(object):
         
         start_response("200 OK", headers)
         
-        return """<form action='login_action' method='POST'>Username: <input type='text' name='username'><br>Password:<input type='text' name='password'><br><input type='submit'></form>"""
+        return """<form action='login_action' method='POST'>
+                    Username: <input type='text' name='username'><br>
+                    Password:<input type='text' name='password'><br>
+                    <input type='submit' value='Login' />
+                </form>"""
 
     def login_action(self, environ, start_response):
         print environ['wsgi.input']
         form = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ)
-        
-        #loggedIn = 1
         
         try:
             username = form['username'].value
@@ -66,30 +55,20 @@ class MeepExampleApp(object):
         except KeyError:
             password = None
 
-            
         if username is not None:
-            #print username
             if password is not None:
                 print password
                 if meeplib.is_user(username, password):
-                    print "correct password"
                     meeplib.set_current_user(username)
-                    print username
-                    print meeplib.get_current_user()
                     v = '/'
                 else:
-                    print 'incorrect password'
                     v = '/login_failed'
             else:
-                print 'bad password'
                 v = '/login_failed'
             
         else:
-            print 'bad username'
             v = '/login_failed'
 
-        
-            
         # retrieve user
         user = meeplib.get_user(username)
 
@@ -117,7 +96,11 @@ class MeepExampleApp(object):
         
         start_response("200 OK", headers)
        
-        return """<form action='create_user_action' method='POST'>Username: <input type='text' name='username'><br>Password:<input type='text' name='password'><br><input type='Submit'></form>"""
+        return """<form action='create_user_action' method='POST'>
+                    Username: <input type='text' name='username'><br>
+                    Password:<input type='text' name='password'><br>
+                    <input type='Submit' value='Create User' />
+                </form>"""
        
         
     def create_user_action(self, environ, start_response):
@@ -152,7 +135,7 @@ class MeepExampleApp(object):
     def logout(self, environ, start_response):
         # does nothing
         headers = [('Content-type', 'text/html')]
-
+        meeplib.set_current_user('')
         # send back a redirect to '/'
         k = 'Location'
         v = '/'
@@ -174,26 +157,25 @@ class MeepExampleApp(object):
             s.append('title: %s<p>' % (m.title))
             s.append('message: %s<p>' % (m.post))
             s.append('author: %s<p>' % (m.author.username))
-
-            s.append("""
-                <script type='text/javascript'>var clearedResponseText = false;</script>
-                <form action='reply' method='POST'>
-                <input type='hidden' name='title' value='""" + str(m.title) + """' />
-                <input type='hidden' name='parentPostID' value='""" + str(m.id) + """' />
-                <input type='text' name='message' value='Enter a response here'
-                    onclick="if (!clearedResponseText) {
-                        value = ''; 
-                        clearedResponseText = true;
-                    }" />
-                <input type='submit' value='Submit response' />
-                </form>""")
-            s.append("""
-                <form action='remove' method='POST'>
-                <input type='hidden' name='messageID' value='""" + str(m.id) + """' />
-                <input type='submit' value='Delete this message' 
-                    onclick="return confirm('Are you sure you want to delete this message? Any responses will also be deleted.')" />
-                </form></div>""")
-            s.append('<hr>')
+            if meeplib.get_current_user() != '':
+                s.append("""
+                    <script type='text/javascript'>var clearedResponseText = false;</script>
+                    <form action='reply' method='POST'>
+                    <input type='hidden' name='title' value='""" + str(m.title) + """' />
+                    <input type='hidden' name='parentPostID' value='""" + str(m.id) + """' />
+                    <input type='text' name='message' value='Enter a response here'
+                        onclick="if (!clearedResponseText) {
+                            value = ''; 
+                            clearedResponseText = true;
+                        }" />
+                    <input type='submit' value='Submit response' />
+                    </form>""")
+                s.append("""
+                    <form action='remove' method='POST'>
+                    <input type='hidden' name='messageID' value='""" + str(m.id) + """' />
+                    <input type='submit' value='Delete this message' />
+                    </form>""")
+            s.append('</div><hr>')
             if m.id != -1:
                 stack.append(m.id)
 
@@ -237,10 +219,7 @@ class MeepExampleApp(object):
         title = form['title'].value
         message = form['message'].value
         parentPostID = int(form['parentPostID'].value)
-        #username = 'test'
         user = meeplib.get_user(meeplib.get_current_user())
-        
-
         new_message = meeplib.Message(title, message, user, parentPostID)
 
         headers = [('Content-type', 'text/html')]
@@ -255,8 +234,6 @@ class MeepExampleApp(object):
         title = form['title'].value
         message = form['message'].value
         parentPostID = int(form['parentPostID'].value)
-        #username = 'test'
-        print "!!!!!!"
         print meeplib.get_current_user()
         user = meeplib.get_user(meeplib.get_current_user())
         
