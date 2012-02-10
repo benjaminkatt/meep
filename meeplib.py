@@ -26,7 +26,7 @@ Functions and classes:
 """
 
 __all__ = ['Message', 'get_all_messages', 'get_message', 'delete_message',
-           'User', 'set_current_user', 'get_current_user', 'get_user',
+           'User', 'get_user',
            'get_all_users', 'delete_user', 'is_user']
 
 ###
@@ -42,9 +42,6 @@ _user_ids = {}
 
 # a dictionary, storing all users by username
 _users = {}
-
-#a string that holds the username of the current logged in user
-_current_user = ''
 
 def _getFileName():
     return 'meepBackup.txt'
@@ -89,12 +86,11 @@ def _reset():
     Clean out all persistent data structures, for testing purposes.
     """
 
-    global _messages, _users, _user_ids, current_user
+    global _messages, _users, _user_ids
 
     _messages = {}
     _users = {}
     _user_ids = {}
-    _current_user = ''
 
 ###
 
@@ -169,13 +165,6 @@ class User(object):
         _user_ids[self.id] = self
         _users[self.username] = self
         _backup_meep()
-
-def set_current_user(username):
-    global _current_user
-    _current_user = username
-
-def get_current_user():
-    return _current_user
 
 def get_user(username):
     return _users.get(username)         # return None if no such user
