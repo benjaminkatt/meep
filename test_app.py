@@ -66,8 +66,26 @@ class TestApp(unittest.TestCase):
         data = self.app(environ, fake_start_response)
         assert 'Please login to create and delete messages' in data[0]
         assert 'Log in' in data[0]
-    
-    def test_show_messages(self):
+        
+    def test_login_failed(self):
+        environ = {}                    # make a fake dict
+        environ['PATH_INFO'] = '/'
+        def fake_start_response(status, headers):
+            assert status == '200 OK'
+            assert ('Content-type', 'text/html') in headers
+            
+        #check that the user is logged out to begin with    
+        data = self.app(environ, fake_start_response)
+        assert 'Please login to create and delete messages' in data[0]
+        assert 'Log in' in data[0]
+        
+        #log in
+        meep_example_app.meeplib.set_current_user('studenta')
+        data = self.app(environ, fake_start_response)
+        assert 'Please login to create and delete messages' in data[0]
+        assert 'Log in' in data[0]
+        
+    def test_list_messages(self):
         environ = {}                    # make a fake dict
         environ['PATH_INFO'] = '/m/list'
         def fake_start_response(status, headers):
