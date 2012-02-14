@@ -3,15 +3,7 @@ go http://localhost:8000/
 #nobody should be logged in initially
 notfind 'you are logged in as user'
 
-#Check that this user does not already exist
-follow "Log in"
-fv 1 username 'studenta'
-fv 1 password 'passworda'
-submit
-find 'Login Failed. Please Try Again.'
-
 #Create New User
-follow "Index"
 follow "Create a New User"
 fv 1 username 'studenta'
 fv 1 password 'passworda'
