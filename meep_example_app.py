@@ -5,6 +5,7 @@ import pickle
 import meepcookie
 import Cookie
 
+from jinja2 import Environment, FileSystemLoader
 
 #Updated for HW3 11:43 Jan26
 def initialize():
@@ -22,6 +23,13 @@ def initialize():
         y = meeplib.User('studenty', 'passwordy')
         z = meeplib.User('studentz', 'passwordz')
         meeplib.Message('my title', 'This is my message!', u, -1)
+        
+env = Environment(loader=FileSystemLoader('templates'))
+
+def render_page(filename, **variables):
+    template = env.get_template(filename)
+    x = template.render(**variables)
+    return str(x)
 
 class MeepExampleApp(object):
     """
@@ -37,14 +45,8 @@ class MeepExampleApp(object):
         
     def create_user(self, environ, start_response):
         headers = [('Content-type', 'text/html')]
-        
         start_response("200 OK", headers)
-       
-        return """<form action='create_user_action' method='get'>
-                    Username: <input type='text' name='username'><br>
-                    Password:<input type='text' name='password'><br>
-                    <input type='Submit' value='Create User' />
-                </form>"""
+        return render_page("create_user.html")
        
         
     def create_user_action(self, environ, start_response):
@@ -69,35 +71,21 @@ class MeepExampleApp(object):
         
     def index(self, environ, start_response):
         user = self.authHandler(environ)
-        
         start_response("200 OK", [('Content-type', 'text/html')])
-        if user is None:
-            return ["""Please login to create and delete messages
-			    <p><a href='/login'>Log in</a>
-			    <p><a href='/create_user'>Create a New User</a>
-			    <p><a href='/m/list'>Show messages</a>"""]
-        else:
-            return ["""you are logged in as user: %s
-			    <p><a href='/m/add'>Add a message</a>
-			    <p><a href='/create_user'>Create a New User</a>
-			    <p><a href='/logout'>Log out</a>
-			    <p><a href='/m/list'>Show messages</a>""" % user.username]
+        return [ render_page('index.html', user = user) ]
         
     def login(self, environ, start_response):
         user = self.authHandler(environ)
         
         headers = [('Content-type', 'text/html')]
         form = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ)
-        formSubmission = False
         try:
             username = form['username'].value
             user = meeplib.get_user(username)
-            formSubmission = True
             password = form['password'].value
         except:
             password = None
                
-        s=[]
         if ((user is not None) and 
             (password is not None) and 
             (user.password == password)):
@@ -106,16 +94,9 @@ class MeepExampleApp(object):
             headers.append((k, v))
             cookie_name, cookie_val = meepcookie.make_set_cookie_header('username', user.username)
             headers.append((cookie_name, cookie_val))
-        elif formSubmission:
-            s.append("""Login Failed.""")
             
         start_response('302 Found', headers)
-        s.append("""<form action='login' method='POST'>
-                        Username: <input type='text' name='username'><br>
-                        Password: <input type='text' name='password'><br>
-                        <input type='submit' value='Login' />
-                    </form>""")
-        return [''.join(s)]
+        return [ render_page('login.html') ]
         
 
     def logout(self, environ, start_response):
@@ -135,60 +116,13 @@ class MeepExampleApp(object):
     def list_messages(self, environ, start_response):
         user = self.authHandler(environ)
         messages = meeplib.get_all_messages()
-
-        s = []
-        stack = []
-        for m in messages:
-            while (len(stack) > 0) and (stack[-1] != m.parentPostID):
-                stack.pop()
-                
-            s.append('<div style=margin-left:' + str(len(stack) * 100) + 'px>id: %d<p>' % (m.id))
-            s.append('title: %s<p>' % (m.title))
-            s.append('message: %s<p>' % (m.post))
-            s.append('author: %s<p>' % (m.author.username))
-            if user is not None:
-                s.append("""
-                    <script type='text/javascript'>var clearedResponseText = false;</script>
-                    <form action='reply' method='get'>
-                    <input type='hidden' name='title' value='""" + str(m.title) + """' />
-                    <input type='hidden' name='parentPostID' value='""" + str(m.id) + """' />
-                    <input type='text' name='message' value='Enter a response here'
-                        onclick="if (!clearedResponseText) {
-                            value = ''; 
-                            clearedResponseText = true;
-                        }" />
-                    <input type='submit' value='Submit response' />
-                    </form>""")
-                s.append("""
-                    <form action='remove' method='get'>
-                    <input type='hidden' name='messageID' value='""" + str(m.id) + """' />
-                    <input type='submit' value='Delete this message' />
-                    </form>""")
-            s.append('</div><hr>')
-            if m.id != -1:
-                stack.append(m.id)
-
-
-        s.append("<a href='../../'>index</a>")
-            
-        headers = [('Content-type', 'text/html')]
-        start_response("200 OK", headers)
-        
-        return ["".join(s)]
+        start_response("200 OK", [('Content-type', 'text/html')])
+        return [ render_page('list_messages.html', user = user, messages = messages) ]
 
     def add_message(self, environ, start_response):
         headers = [('Content-type', 'text/html')]
-        
-        start_response("200 OK", headers)
-
-        return """
-            <form action='add_action' method='get'>
-                <input type='hidden' name='parentPostID' value='-1' />
-                Title: <input type='text' name='title'><br>
-                Message:<input type='text' name='message'><br>
-                <input type='submit'>
-            </form>
-            """
+        start_response("200 OK", [('Content-type', 'text/html')])
+        return [ render_page('add_message.html') ]
 
     def remove_message(self, environ, start_response):
         print environ['wsgi.input']

@@ -27,9 +27,9 @@ class TestApp(unittest.TestCase):
             assert ('Content-type', 'text/html') in headers
             
         data = self.app(environ, fake_start_response)
-        assert string.find(data, 'parentPostID') != -1
-        assert string.find(data, 'title') != -1
-        assert string.find(data, 'message') != -1
+        assert string.find(data[0], 'parentPostID') != -1
+        assert string.find(data[0], 'title') != -1
+        assert string.find(data[0], 'message') != -1
 
     def test_add_message_action(self):
         #check that there is exactly one message stored
