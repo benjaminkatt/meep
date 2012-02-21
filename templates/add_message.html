@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}meep: add message!{% endblock title %}
+
+{% block body %}
+
+<form action='add_action' method='get'>
+    <input type='hidden' name='parentPostID' value='-1' />
+    Title: <input type='text' name='title'><br>
+    Message:<input type='text' name='message'><br>
+    <input type='submit'>
+</form>
+
+{% endblock body %}
