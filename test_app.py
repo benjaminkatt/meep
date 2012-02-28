@@ -73,8 +73,8 @@ class TestApp(unittest.TestCase):
             assert ('Content-type', 'text/html') in headers
             
         data = self.app(environ, fake_start_response)
-        assert string.find(data, 'Username') != -1
-        assert string.find(data, 'Password') != -1
+        assert string.find(data[0], 'Username') != -1
+        assert string.find(data[0], 'Password') != -1
 
     def test_create_user_action(self):
         #check that there are 5 users initially

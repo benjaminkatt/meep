@@ -46,7 +46,7 @@ class MeepExampleApp(object):
     def create_user(self, environ, start_response):
         headers = [('Content-type', 'text/html')]
         start_response("200 OK", headers)
-        return render_page("create_user.html")
+        return [ render_page("create_user.html") ]
        
         
     def create_user_action(self, environ, start_response):
@@ -67,7 +67,7 @@ class MeepExampleApp(object):
         headers.append((k, v))
         start_response('302 Found', headers)
         
-        return "no such content"
+        return ["no such content"]
         
     def index(self, environ, start_response):
         user = self.authHandler(environ)
@@ -111,7 +111,7 @@ class MeepExampleApp(object):
         headers.append((cookie_name, cookie_val))
         start_response('302 Found', headers)
         
-        return "no such content"
+        return ["no such content"]
 
     def list_messages(self, environ, start_response):
         user = self.authHandler(environ)
@@ -149,6 +149,7 @@ class MeepExampleApp(object):
         headers.append(('Location', '/m/list'))
         start_response("302 Found", headers)
         return ["message added"]
+        
 
     def add_message_action(self, environ, start_response):
         user = self.authHandler(environ)

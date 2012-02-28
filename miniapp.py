@@ -1,5 +1,6 @@
 import datetime
 import sys
+import urllib
 from meep_example_app import MeepExampleApp, initialize
 
 global _status
@@ -27,7 +28,7 @@ environMap = {
 def buildResponse(webRequest):
     
     #parse request
-    requestMap = {}
+    requestMap = {'wsgi.input' : ''}
     
     for line in webRequest:
         line = line.strip() #remove leading and trailing whitespace
@@ -36,11 +37,17 @@ def buildResponse(webRequest):
             line.startswith('POST')):
             line = line.split()
             requestMap['REQUEST_METHOD'] = line[0]
-            requestMap['PATH_INFO'] = line[1]
+            if line[1].find('?') == -1:
+                requestMap['PATH_INFO'] = line[1]
+            else:
+                tmpPath = line[1].split('?')
+                requestMap['PATH_INFO'] = tmpPath[0]
+                requestMap['QUERY_STRING'] = tmpPath[1]
+
         else:
             try:
                 line = line.split(':',1)
-                requestMap[line[0]] = line[1].strip()
+                requestMap[environMap[line[0].lower()]] = line[1].strip()
             except:
                 pass
     
@@ -53,7 +60,9 @@ def buildResponse(webRequest):
     currentTime = datetime.datetime.now()
     output.append('Date: ' + currentTime.strftime('%a, %d %b %Y %H:%M:%S EST'))
     output.append('Server: WSGIServer/0.1 Python/2.5')
-    output.append(_headers[0][0] + ': ' + _headers[0][1])
+    for tmpHeader in _headers:
+        output.append(tmpHeader[0] + ': ' + tmpHeader[1])
+    output.append('\r\n')
     for r in response:
         output.append(r)
     return '\r\n'.join(output)
