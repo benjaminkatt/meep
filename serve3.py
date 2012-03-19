@@ -3,6 +3,7 @@ import sys
 import socket
 import miniapp
 import string
+import threading
 
 def handle_connection(sock):
     sentinel = '\r\n\r\n'
@@ -38,4 +39,5 @@ if __name__ == '__main__':
         print 'waiting...'
         (client_sock, client_address) = sock.accept()
         print 'got connection', client_address
-        handle_connection(client_sock)
+        thread = threading.Thread(target=handle_connection, args=(client_sock,))
+        thread.start()
