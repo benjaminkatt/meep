@@ -50,6 +50,11 @@ def buildResponse(webRequest):
                 requestMap[environMap[line[0].lower()]] = line[1].strip()
             except:
                 pass
+            
+    #convert post request to get request
+    if 'Content-Type: application/x-www-form-urlencoded' in webRequest:
+        requestMap['REQUEST_METHOD'] = 'GET'
+        requestMap['QUERY_STRING'] = webRequest[len(webRequest) - 1]
     
     #build response
     initialize()

@@ -6,6 +6,7 @@ import meepcookie
 import Cookie
 
 from jinja2 import Environment, FileSystemLoader
+from fileServer import FileServer
 
 #Updated for HW3 11:43 Jan26
 def initialize():
@@ -178,7 +179,12 @@ class MeepExampleApp(object):
                       '/m/add': self.add_message,
                       '/m/remove': self.remove_message,
                       '/m/reply': self.reply_message,
-                      '/m/add_action': self.add_message_action
+                      '/m/add_action': self.add_message_action,
+                      '/style.css': FileServer('styles/style.css'),
+                      '/images/background.png': FileServer('styles/images/background.png'),
+                      '/images/background_content.gif': FileServer('styles/images/background_content.gif'),
+                      '/images/background_top.gif' : FileServer('styles/images/background_top.gif'),
+                      '/images/background_bottom.gif' : FileServer('styles/images/background_bottom.gif')
 
                       }
 

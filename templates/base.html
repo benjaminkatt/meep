@@ -1,11 +1,28 @@
 <html>
 <head>
 {% block head %}
+<link rel="stylesheet" href="/style.css" type="text/css" />
 <title>{% block title %}meeeeeeep!{% endblock title %}</title>
 {% endblock %}
 </head>
 <body>
-{% block body %}
-{% endblock %}
+<div id="container">
+
+<div id="header"><h1>Meep</h1></div>
+
+<div id="sub_header">... a project for CSE 491</div>
+
+<div id="main_content_top"></div>
+
+<div id="main_content">
+	<div class="content">
+		{% block body %}
+		{% endblock %}
+	</div>
+	<div id="clear"></div>
+</div>
+<div id="main_content_bottom"></div>
+<div id="footer"><strong>Copyright &copy; 2007</strong> | <a href="#">Your Site</a> | <b>Design by</b> <a href="http://www.pikanai.com">Pikanai.com</a></div>
+</div>
 </body>
 </html>
