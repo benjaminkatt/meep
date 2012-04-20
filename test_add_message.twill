@@ -2,8 +2,8 @@ go http://localhost:8000/
 
 #Must Log in to add a message
 follow "Log in"
-fv 1 username 'studentx'
-fv 1 password 'passwordx'
+fv 1 username 'studenta'
+fv 1 password 'passworda'
 submit
 
 follow "Add a message"

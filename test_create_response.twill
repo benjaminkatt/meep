@@ -7,8 +7,8 @@ follow "index"
 
 #Log in
 follow "Log in"
-fv 1 username 'studentx'
-fv 1 password 'passwordx'
+fv 1 username 'studenta'
+fv 1 password 'passworda'
 submit
 
 #Create a reponse

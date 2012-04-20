@@ -4,6 +4,8 @@ import socket
 import miniapp
 import string
 
+running = True
+
 def handle_connection(sock):
     sentinel = '\r\n\r\n'
     data = ''
@@ -52,19 +54,23 @@ def handle_connection(sock):
     except socket.error:
         print 'socket failed'        
 
+def runServer(ip, port):
+    port = int(port)
 
+    print 'binding', ip, port
+    sock = socket.socket()
+    sock.bind( (ip, port) )
+    sock.listen(5)
+
+    while running:
+        #print 'waiting...'
+        (client_sock, client_address) = sock.accept()
+        #print 'got connection', client_address
+        handle_connection(client_sock)
+        
+    sock.close()   
 
 if __name__ == '__main__':
     interface, port = sys.argv[1:3]
-    port = int(port)
-
-    print 'binding', interface, port
-    sock = socket.socket()
-    sock.bind( (interface, port) )
-    sock.listen(5)
-
-    while 1:
-        print 'waiting...'
-        (client_sock, client_address) = sock.accept()
-        print 'got connection', client_address
-        handle_connection(client_sock)
+    runServer(interface, port)
+    

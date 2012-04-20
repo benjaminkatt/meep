@@ -3,19 +3,34 @@ import string
 import os
 import meep_example_app
 import urllib
+import MySQLdb as mdb
+import meeplib
 
 class TestApp(unittest.TestCase):
     def setUp(self):
-        #the backup file causes some of the tests to fail - not sure why
-        #remove the backup file before every test
+        #the backup data causes some of the tests to fail - not sure why
+        #remove the backup data before every test
         try:
-            os.remove(meep_example_app.meeplib._getFileName())
-        except:
-            pass    #the file does not exist
+            dbHost = 'localhost'
+            dbName = 'meep'
+            dbUsername = 'root'
+            dbPassword = 'password'
+            con = None
+            con = mdb.connect(dbHost, dbUsername, dbPassword, dbName)
+            cur = con.cursor()
+            cur.execute("DELETE FROM MESSAGE")
+            cur.execute("DELETE FROM USER")
+            con.commit()
+            meep_example_app.meeplib._users = {}
+            meep_example_app.meeplib._messages = {}
+            meep_example_app.meeplib._user_ids= {}  
+        except mdb.Error, e:
+            print "Error %d: %s" % (e.args[0], e.args[1])
         
         meep_example_app.initialize()
         app = meep_example_app.MeepExampleApp()
         self.app = app
+        
         
     def test_add_message(self):
         environ = {}                    # make a fake dict
@@ -33,6 +48,7 @@ class TestApp(unittest.TestCase):
 
     def test_add_message_action(self):
         #check that there is exactly one message stored
+        tmp = len(meep_example_app.meeplib._messages)
         assert len(meep_example_app.meeplib._messages) == 1
         
         environ = {}                    # make a fake dict
@@ -50,7 +66,7 @@ class TestApp(unittest.TestCase):
         #check that there are 2 messages stored, and check that the 2nd message is what is expected
         assert len(meep_example_app.meeplib._messages) == 2
         assert (meep_example_app.meeplib._messages[1] == 
-            meep_example_app.meeplib.Message('Mock title', 'Mock message', meep_example_app.meeplib.get_user('studentx'), -1))
+            meep_example_app.meeplib.Message('Mock title', 'Mock message', meep_example_app.meeplib.get_user('studentx').id, -1))
         
     def test_auth_handler(self):
         environ = {}                    # make a fake dict
@@ -130,7 +146,7 @@ class TestApp(unittest.TestCase):
         #check that there is now 2 messages
         assert len(meep_example_app.meeplib._messages) == 2
         assert (meep_example_app.meeplib._messages[1] ==
-                meep_example_app.meeplib.Message('Mock title', 'Mock Message', meep_example_app.meeplib.get_user('studentx'), 0))
+                meep_example_app.meeplib.Message('Mock title', 'Mock Message', meep_example_app.meeplib.get_user('studentx').id, 0))
 
     def test_index(self):
         environ = {}                    # make a fake dict

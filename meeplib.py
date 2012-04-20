@@ -1,4 +1,4 @@
-import pickle
+import MySQLdb as mdb
 
 """
 meeplib - A simple message board back-end implementation.
@@ -43,24 +43,50 @@ _user_ids = {}
 # a dictionary, storing all users by username
 _users = {}
 
-def _getFileName():
-    return 'meepBackup.txt'
+dbHost = 'localhost'
+dbName = 'meep'
+dbUsername = 'root'
+dbPassword = 'password'
+con = None
+try:
+    con = mdb.connect(dbHost, dbUsername, dbPassword, dbName)
+    cur = con.cursor()   
+except mdb.Error, e:
+    print "Error %d: %s" % (e.args[0],e.args[1])
 
-def _backup_meep():
-    meepBackup = open(_getFileName(), 'w')
-    pickle.dump(_users, meepBackup)
-    pickle.dump(_user_ids, meepBackup)
-    pickle.dump(_messages, meepBackup)
-    meepBackup.close()
       
 def _load_backup():
-    global _messages, _users, _user_ids
-    meepBackup = open(_getFileName(), 'r')
-    _users = pickle.load(meepBackup)
-    _user_ids = pickle.load(meepBackup)
-    _messages = pickle.load(meepBackup)
-    meepBackup.close()
-
+#    _messages = pickle.load(meepBackup)
+    #load users
+    cur.execute("SELECT * FROM USER")
+    data = cur.fetchall()
+    for row in data:
+        loadUser(row[0], row[1], row[2])
+    
+    #load messages
+    cur.execute("SELECT * FROM MESSAGE")
+    data = cur.fetchall()
+    for row in data:
+        loadMessage(row[0], row[1], row[2], row[3], row[4])
+        
+    #rebuild child messages
+    for m in _messages.values():
+        if m.parentPostID != -1:
+            try:
+                _messages[m.parentPostID].children[m.id] = m
+            except:
+                print "can't find parent message"
+    
+    
+def loadUser(username, password, id):
+    user = User(username, password)
+    _users[user.username] = user
+    _user_ids[id] = user
+    
+def loadMessage(id, title, post, parentID, userID):
+    message = Message(title, post, userID, parentID)
+    _messages[id] = message
+    
 def _get_root_messages():
     rootMessages = []
     for m in _messages.values():
@@ -73,6 +99,9 @@ def _get_next_message_id():
         return max(_messages.keys()) + 1
     return 0
 
+def getUserIDs():
+    return _user_ids
+
 def _get_next_user_id():
     if _users:
         return max(_user_ids.keys()) + 1 
@@ -84,7 +113,6 @@ def _reset():
     """
 
     global _messages, _users, _user_ids
-
     _messages = {}
     _users = {}
     _user_ids = {}
@@ -101,7 +129,6 @@ class Message(object):
     def __init__(self, title, post, author, parentPostID):
         self.title = title
         self.post = post
-        assert isinstance(author, User)
         self.author = author
         self.parentPostID = parentPostID
         self.children = {}
@@ -110,8 +137,15 @@ class Message(object):
         else:
             self.id = _get_next_message_id()
             _messages.get(parentPostID).children[self.id] = self
-            _messages[self.id] = self    
-        _backup_meep()
+            _messages[self.id] = self
+            
+    def insertIntoDB(self):
+        try:
+            cur.execute("""INSERT INTO MESSAGE(ID, Title, Post, parentID, USER_ID) 
+                VALUES(%d, '%s', '%s', %d, %d)""" % (self.id, self.title, self.post, self.parentPostID, self.author))
+            con.commit()
+        except mdb.Error, e:
+            print "Error %d: %s" % (e.args[0],e.args[1])   
         
     def __cmp__(self, other):
         if (other.title != self.title or
@@ -147,13 +181,20 @@ def delete_message(msg):
     assert isinstance(msg, Message)
     for c in msg.children.values():
         delete_message(c)
-    
-    if msg.parentPostID == -1:
-        del _messages[msg.id]
-    else:
-        del _messages[msg.parentPostID].children[msg.id]
-        del _messages[msg.id]
-    _backup_meep()
+        try:
+            cur.execute("DELETE FROM MESSAGE WHERE ID=%d" % (c.id))
+        except mdb.Error, e:
+            print "Error %d: %s" % (e.args[0],e.args[1])  
+    try:
+        if msg.parentPostID == -1:
+            del _messages[msg.id]
+        else:
+            del _messages[msg.parentPostID].children[msg.id]
+            del _messages[msg.id]
+        cur.execute("DELETE FROM MESSAGE WHERE ID=%d" % (msg.id))
+        con.commit()
+    except mdb.Error, e:
+        print "Error %d: %s" % (e.args[0],e.args[1])  
 
 ###
 
@@ -173,7 +214,13 @@ class User(object):
         self.id = _get_next_user_id()
         _user_ids[self.id] = self
         _users[self.username] = self
-        _backup_meep()
+        
+    def insertIntoDB(self):
+        try:
+            cur.execute("INSERT INTO USER(Username, Password, ID) VALUES('%s', '%s', %d)" % (self.username, self.password, self.id))
+            con.commit()
+        except mdb.Error, e:
+            print "Error %d: %s" % (e.args[0],e.args[1])
 
 def get_user(username):
     return _users.get(username)         # return None if no such user
@@ -181,7 +228,8 @@ def get_user(username):
 def get_all_users():
     return _users.values()
 
-def delete_user(user):
+def delete_user(user):   
     del _users[user.username]
     del _user_ids[user.id]
+    
     

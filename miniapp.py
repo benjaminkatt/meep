@@ -25,6 +25,9 @@ environMap = {
         'accept-encoding' : 'HTTP_ACCEPT_ENCODING'
        }
 
+initialize()
+app = MeepExampleApp()
+
 def buildResponse(webRequest):
     
     #parse request
@@ -57,8 +60,7 @@ def buildResponse(webRequest):
         requestMap['QUERY_STRING'] = webRequest[len(webRequest) - 1]
     
     #build response
-    initialize()
-    app = MeepExampleApp()
+    
     response = app(requestMap, fake_start_response)
     output = []
     output.append('HTTP/1.0 ' + _status)

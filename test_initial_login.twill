@@ -4,8 +4,8 @@ go http://localhost:8000/
 notfind 'you are logged in as user'
 
 follow "Log in"
-fv 1 username 'studentx'
-fv 1 password 'passwordx'
+fv 1 username 'studenta'
+fv 1 password 'passworda'
 submit
 
 find 'you are logged in as user'

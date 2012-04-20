@@ -9,7 +9,7 @@
   id: {{ item.id }}<p>
   title: {{ item.title }}<p>
   message: {{ item.post }}<p>
-  author: {{ item.author.username }}<p>
+  author: {{ userIDs[item.author].username }}<p>
   
   {% if user %}
   <script type='text/javascript'>var clearedResponseText = false;</script>

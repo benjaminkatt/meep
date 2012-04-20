@@ -1,29 +1,34 @@
 import meeplib
 import traceback
 import cgi
-import pickle
 import meepcookie
 import Cookie
 
 from jinja2 import Environment, FileSystemLoader
 from fileServer import FileServer
 
-#Updated for HW3 11:43 Jan26
 def initialize():
-    try:
-        #clear everything out before loading, this fixes a few tests
-        meeplib._messages = {}
-        meeplib._users = {}
-        meeplib._user_ids = {}
-        meeplib._load_backup()
-    except IOError:
+    #clear everything out before loading, this fixes a few tests
+    meeplib._messages = {}
+    meeplib._users = {}
+    meeplib._user_ids = {}
+    meeplib._load_backup()
+    
+    if (len(meeplib._messages) == 0 and len(meeplib._users) == 0):
         # create default users
         u = meeplib.User('test', 'foo')
+        u.insertIntoDB()
         a = meeplib.User('Anonymous', 'password')
+        a.insertIntoDB()
         x = meeplib.User('studentx', 'passwordx')
+        x.insertIntoDB()
         y = meeplib.User('studenty', 'passwordy')
+        y.insertIntoDB()
         z = meeplib.User('studentz', 'passwordz')
-        meeplib.Message('my title', 'This is my message!', u, -1)
+        z.insertIntoDB()
+        m = meeplib.Message('my title', 'This is my message!', u.id, -1)
+        m.insertIntoDB()
+        
         
 env = Environment(loader=FileSystemLoader('templates'))
 
@@ -58,6 +63,7 @@ class MeepExampleApp(object):
             username = form['username'].value
             password = form['password'].value
             u = meeplib.User(username, password)
+            u.insertIntoDB()
         except:
             pass
 
@@ -117,8 +123,9 @@ class MeepExampleApp(object):
     def list_messages(self, environ, start_response):
         user = self.authHandler(environ)
         messages = meeplib.get_all_messages()
+        userIDs = meeplib.getUserIDs()
         start_response("200 OK", [('Content-type', 'text/html')])
-        return [ render_page('list_messages.html', user = user, messages = messages) ]
+        return [ render_page('list_messages.html', user = user, messages = messages, userIDs = userIDs) ]
 
     def add_message(self, environ, start_response):
         headers = [('Content-type', 'text/html')]
@@ -144,13 +151,13 @@ class MeepExampleApp(object):
         message = form['message'].value
         parentPostID = int(form['parentPostID'].value)
         user = self.authHandler(environ)
-        new_message = meeplib.Message(title, message, user, parentPostID)
+        new_message = meeplib.Message(title, message, user.id, parentPostID)
+        new_message.insertIntoDB()
 
         headers = [('Content-type', 'text/html')]
         headers.append(('Location', '/m/list'))
         start_response("302 Found", headers)
         return ["message added"]
-        
 
     def add_message_action(self, environ, start_response):
         user = self.authHandler(environ)
@@ -160,7 +167,8 @@ class MeepExampleApp(object):
         message = form['message'].value
         parentPostID = int(form['parentPostID'].value)
         
-        new_message = meeplib.Message(title, message, user, parentPostID)
+        new_message = meeplib.Message(title, message, user.id, parentPostID)
+        new_message.insertIntoDB()
 
         headers = [('Content-type', 'text/html')]
         headers.append(('Location', '/m/list'))
