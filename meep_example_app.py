@@ -45,7 +45,8 @@ class MeepExampleApp(object):
         try:
             cookie = Cookie.SimpleCookie(environ["HTTP_COOKIE"])
             username = cookie["username"].value
-            return meeplib.get_user(username)
+            user = meeplib.getUserFromUUID(username)
+            return user
         except:
             return None
         
@@ -99,7 +100,7 @@ class MeepExampleApp(object):
             k = 'Location'
             v = '/'
             headers.append((k, v))
-            cookie_name, cookie_val = meepcookie.make_set_cookie_header('username', user.username)
+            cookie_name, cookie_val = meepcookie.make_set_cookie_header('username', user)
             headers.append((cookie_name, cookie_val))
             
         start_response('302 Found', headers)
@@ -107,6 +108,7 @@ class MeepExampleApp(object):
         
 
     def logout(self, environ, start_response):
+        user = self.authHandler(environ)
         # does nothing
         headers = [('Content-type', 'text/html')]
         
@@ -114,7 +116,9 @@ class MeepExampleApp(object):
         k = 'Location'
         v = '/'
         headers.append((k, v))
-        cookie_name, cookie_val = meepcookie.make_set_cookie_header('username','')
+        cookie = Cookie.SimpleCookie(environ["HTTP_COOKIE"])
+        username = cookie["username"].value
+        cookie_name, cookie_val = meepcookie.destroyCookieHeader(username)
         headers.append((cookie_name, cookie_val))
         start_response('302 Found', headers)
         

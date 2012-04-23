@@ -1,7 +1,7 @@
 import unittest
 import meeplib
 import os
-import MySQLdb as mdb
+from mysqlConnection import con, cur
 
 # note:
 #
@@ -11,22 +11,14 @@ import MySQLdb as mdb
 
 class TestMeepLib(unittest.TestCase):
     def setUp(self):
-        try:
-            #the backup data causes some of the tests to fail - not sure why
-            #remove the backup data before every test
-            dbHost = 'localhost'
-            dbName = 'meep'
-            dbUsername = 'root'
-            dbPassword = 'password'
-            con = None
-            con = mdb.connect(dbHost, dbUsername, dbPassword, dbName)
-            cur = con.cursor()
-            cur.execute("DELETE FROM MESSAGE")
-            cur.execute("DELETE FROM USER")
-            meeplib._reset()
-            con.commit()  
-        except mdb.Error, e:
-            print "Error %d: %s" % (e.args[0], e.args[1])
+        #the backup data causes some of the tests to fail - not sure why
+        #remove the backup data before every test
+        cur.execute("DELETE FROM MESSAGE")
+        cur.execute("DELETE FROM SESSION")
+        cur.execute("DELETE FROM USER")
+        meeplib._reset()
+        con.commit()  
+            
         u = meeplib.User('foo', 'bar')
         u.insertIntoDB()
         m = meeplib.Message('the title', 'the content', u.id, -1)
@@ -140,13 +132,6 @@ class TestMeepLib(unittest.TestCase):
 
 
     def tearDown(self):
-        meeplib._reset()
-        dbHost = 'localhost'
-        dbName = 'meep'
-        dbUsername = 'root'
-        dbPassword = 'password'
-        con = mdb.connect(dbHost, dbUsername, dbPassword, dbName)
-        cur = con.cursor()
         cur.execute("DELETE FROM MESSAGE")
         cur.execute("DELETE FROM USER")
         meeplib._reset()

@@ -1,3 +1,4 @@
+from mysqlConnection import con, cur
 import MySQLdb as mdb
 
 """
@@ -42,18 +43,12 @@ _user_ids = {}
 
 # a dictionary, storing all users by username
 _users = {}
-
-dbHost = 'localhost'
-dbName = 'meep'
-dbUsername = 'root'
-dbPassword = 'password'
-con = None
-try:
-    con = mdb.connect(dbHost, dbUsername, dbPassword, dbName)
-    cur = con.cursor()   
-except mdb.Error, e:
-    print "Error %d: %s" % (e.args[0],e.args[1])
-
+    
+    
+def getUserFromUUID(id):
+    cur.execute("SELECT U.Username FROM USER U, SESSION S WHERE S.USER_ID=U.ID AND S.ID='%s'" % (id))
+    data = cur.fetchone()
+    return get_user(data[0])
       
 def _load_backup():
 #    _messages = pickle.load(meepBackup)
@@ -140,12 +135,10 @@ class Message(object):
             _messages[self.id] = self
             
     def insertIntoDB(self):
-        try:
-            cur.execute("""INSERT INTO MESSAGE(ID, Title, Post, parentID, USER_ID) 
-                VALUES(%d, '%s', '%s', %d, %d)""" % (self.id, self.title, self.post, self.parentPostID, self.author))
-            con.commit()
-        except mdb.Error, e:
-            print "Error %d: %s" % (e.args[0],e.args[1])   
+        cur.execute("""INSERT INTO MESSAGE(ID, Title, Post, parentID, USER_ID) 
+            VALUES(%d, '%s', '%s', %d, %d)""" % 
+            (self.id, mdb.escape_string(self.title), mdb.escape_string(self.post), self.parentPostID, self.author))
+        con.commit()   
         
     def __cmp__(self, other):
         if (other.title != self.title or
@@ -217,7 +210,8 @@ class User(object):
         
     def insertIntoDB(self):
         try:
-            cur.execute("INSERT INTO USER(Username, Password, ID) VALUES('%s', '%s', %d)" % (self.username, self.password, self.id))
+            cur.execute("INSERT INTO USER(Username, Password, ID) VALUES('%s', '%s', %d)" % 
+                        (mdb.escape_string(self.username), mdb.escape_string(self.password), self.id))
             con.commit()
         except mdb.Error, e:
             print "Error %d: %s" % (e.args[0],e.args[1])

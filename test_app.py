@@ -3,34 +3,26 @@ import string
 import os
 import meep_example_app
 import urllib
-import MySQLdb as mdb
+from mysqlConnection import con, cur
 import meeplib
 
 class TestApp(unittest.TestCase):
     def setUp(self):
         #the backup data causes some of the tests to fail - not sure why
         #remove the backup data before every test
-        try:
-            dbHost = 'localhost'
-            dbName = 'meep'
-            dbUsername = 'root'
-            dbPassword = 'password'
-            con = None
-            con = mdb.connect(dbHost, dbUsername, dbPassword, dbName)
-            cur = con.cursor()
-            cur.execute("DELETE FROM MESSAGE")
-            cur.execute("DELETE FROM USER")
-            con.commit()
-            meep_example_app.meeplib._users = {}
-            meep_example_app.meeplib._messages = {}
-            meep_example_app.meeplib._user_ids= {}  
-        except mdb.Error, e:
-            print "Error %d: %s" % (e.args[0], e.args[1])
+        cur.execute("DELETE FROM MESSAGE")
+        cur.execute("DELETE FROM SESSION")
+        cur.execute("DELETE FROM USER")
+        con.commit()
+        meep_example_app.meeplib._users = {}
+        meep_example_app.meeplib._messages = {}
+        meep_example_app.meeplib._user_ids= {}  
         
         meep_example_app.initialize()
         app = meep_example_app.MeepExampleApp()
         self.app = app
-        
+        cur.execute("INSERT INTO SESSION(ID, USER_ID) VALUES('studentx',%d)" % (meep_example_app.meeplib.get_user('studentx').id))
+        con.commit()
         
     def test_add_message(self):
         environ = {}                    # make a fake dict
@@ -204,7 +196,6 @@ class TestApp(unittest.TestCase):
         data = self.app(environ, fake_start_response)
         assert 'Please login to create and delete messages' in data[0]
         assert 'Log in' in data[0]
-        
       
     def test_login_failed(self):
         environ = {}                    # make a fake dict
