@@ -35,6 +35,22 @@ CREATE  TABLE IF NOT EXISTS `meep`.`MESSAGE` (
 ENGINE = InnoDB;
 
 
+-- -----------------------------------------------------
+-- Table `meep`.`SESSION`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `meep`.`SESSION` (
+  `ID` VARCHAR(128) NOT NULL ,
+  `USER_ID` INT NOT NULL ,
+  PRIMARY KEY (`ID`) ,
+  INDEX `fk_SESSION_USER1` (`USER_ID` ASC) ,
+  CONSTRAINT `fk_SESSION_USER1`
+    FOREIGN KEY (`USER_ID` )
+    REFERENCES `meep`.`USER` (`ID` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
 
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
